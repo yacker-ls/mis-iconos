@@ -1,0 +1,7 @@
+# Ignorar archivos y carpetas de Synology
+@eaDir/
+*@SynoEAStream
+*@SynoResource
+
+# Ignorar archivos de caché del servidor web
+.htaccess
