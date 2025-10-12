@@ -223,6 +223,10 @@
             <p class="subtitle">Sube tus iconos de forma automática a GitHub</p>
         </div>
 
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="index.php" style="font-weight: 500; color: #4a5568; text-decoration: none; background: #e2e8f0; padding: 8px 15px; border-radius: 8px;">🖼️ Ver Galería de Iconos</a>
+        </div>
+
         <div class="requirements">
             <h4>📋 Requisitos del archivo:</h4>
             <ul>
@@ -232,7 +236,8 @@
             </ul>
         </div>
 
-        <form id="uploadForm" action="upload.php" method="POST" enctype="multipart/form-data">
+        <form id="uploadForm" action="uploadimg.php" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="auth_token" value="jose13">
             <label for="iconFile">Selecciona tu archivo:</label>
             
             <div class="file-info" id="fileInfo">
