@@ -1,16 +1,14 @@
 <?php
-// --- CONFIGURACIÓN ---
 $icons_dir = "icons/";
 $repo_path = __DIR__;
 $branch = 'master';
-$delete_pin = '4249';
+$delete_pin = getenv("DELETE_PIN") ?: '4249';
 $message = '';
 
-// --- PROCESO DE ELIMINACIÓN ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
     $pin_ingresado = $_POST['delete_pin'] ?? '';
     if ($pin_ingresado !== $delete_pin) {
-        $message = "<div class='message error'>❌ Código de seguridad incorrecto. No se eliminó el icono.</div>";
+        $message = "<div class='message error'>Codigo de seguridad incorrecto. No se elimino el icono.</div>";
     } else {
         $file_to_delete = basename($_POST['delete_file']);
         $full_path = $icons_dir . $file_to_delete;
@@ -18,23 +16,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
             $commands = [
                 "cd $repo_path",
                 "git rm " . escapeshellarg($full_path) . " 2>&1",
-                "git commit -m \"chore(icons): Se eliminó $file_to_delete desde el visor web\" 2>&1",
+                "git commit -m \"chore(icons): Se elimino $file_to_delete desde el visor web\" 2>&1",
                 "git push origin $branch 2>&1"
             ];
             foreach ($commands as $command) { shell_exec($command); }
-            $message = "<div class='message success'>✅ Icono <strong>" . htmlspecialchars($file_to_delete) . "</strong> eliminado y sincronizado.</div>";
+            $message = "<div class='message success'>Icono <strong>" . htmlspecialchars($file_to_delete) . "</strong> eliminado y sincronizado.</div>";
         } else {
-            $message = "<div class='message error'>❌ Error: El archivo no fue encontrado.</div>";
+            $message = "<div class='message error'>Error: El archivo no fue encontrado.</div>";
         }
     }
 }
 
-// --- MENSAJE DE SUBIDA EXITOSA ---
 if (isset($_GET['upload']) && $_GET['upload'] === 'success') {
-    $message = "<div class='message success'>🚀 ¡Icono subido y sincronizado con GitHub exitosamente!</div>";
+    $message = "<div class='message success'>Icono subido y sincronizado con GitHub exitosamente!</div>";
 }
 
-// --- LECTURA DE LA GALERÍA ---
 $image_files = [];
 $allowed_types = ['png', 'jpg', 'jpeg', 'svg', 'gif'];
 $files = scandir($icons_dir);
@@ -67,7 +63,6 @@ foreach ($files as $file) {
         .icon-card .filename { font-size: 13px; color: #4a5568; word-wrap: break-word; font-weight: 500; margin-bottom: 15px; }
         .delete-btn { background: #e53e3e; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 12px; }
         .empty-gallery { text-align: center; padding: 50px; background-color: #f7fafc; border-radius: 10px; border: 2px dashed #e2e8f0; grid-column: 1 / -1; }
-        /* Modal */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
         .modal { background: #fff; border-radius: 12px; padding: 30px; max-width: 360px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; }
@@ -84,40 +79,36 @@ foreach ($files as $file) {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🖼️ Gestor de Iconos</h1>
+            <h1>Gestor de Iconos</h1>
             <div class="nav-links">
-                <a href="upload.html">Subir Nuevo Icono</a>
+                <a href="upload.php">Subir Nuevo Icono</a>
             </div>
         </div>
-
         <?php echo $message; ?>
-
         <div class="icon-gallery">
             <?php if (!empty($image_files)): ?>
                 <?php foreach ($image_files as $icon): ?>
                     <div class="icon-card">
                         <img src="<?= $icons_dir . htmlspecialchars($icon) ?>" alt="<?= htmlspecialchars($icon) ?>">
                         <div class="filename"><?= htmlspecialchars($icon) ?></div>
-                        <button class="delete-btn" onclick="abrirModal('<?= htmlspecialchars($icon, ENT_QUOTES) ?>')">🗑️ Eliminar</button>
+                        <button class="delete-btn" onclick="abrirModal('<?= htmlspecialchars($icon, ENT_QUOTES) ?>')">Eliminar</button>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="empty-gallery">
-                    <h2>Galería Vacía</h2>
-                    <p>No hay iconos para mostrar. <a href="upload.html">Sube uno ahora</a>.</p>
+                    <h2>Galeria Vacia</h2>
+                    <p>No hay iconos. <a href="upload.php">Sube uno ahora</a>.</p>
                 </div>
             <?php endif; ?>
         </div>
     </div>
-
-    <!-- Modal de confirmación con PIN -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
-            <h3>🔒 Confirmar eliminación</h3>
-            <p>Ingresa el código de seguridad para eliminar <strong id="modalFileName"></strong></p>
+            <h3>Confirmar eliminacion</h3>
+            <p>Ingresa el codigo de seguridad para eliminar <strong id="modalFileName"></strong></p>
             <form method="POST" action="index.php" id="deleteForm">
                 <input type="hidden" name="delete_file" id="deleteFileInput">
-                <input type="password" name="delete_pin" id="pinInput" placeholder="····" maxlength="10" autofocus>
+                <input type="password" name="delete_pin" id="pinInput" placeholder="" maxlength="10" autofocus>
                 <div class="modal-buttons">
                     <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
                     <button type="submit" class="btn-confirm">Eliminar</button>
@@ -125,7 +116,6 @@ foreach ($files as $file) {
             </form>
         </div>
     </div>
-
     <script>
         function abrirModal(filename) {
             document.getElementById('modalFileName').textContent = filename;
@@ -134,12 +124,8 @@ foreach ($files as $file) {
             document.getElementById('modalOverlay').classList.add('active');
             setTimeout(() => document.getElementById('pinInput').focus(), 100);
         }
-        function cerrarModal() {
-            document.getElementById('modalOverlay').classList.remove('active');
-        }
-        document.getElementById('modalOverlay').addEventListener('click', function(e) {
-            if (e.target === this) cerrarModal();
-        });
+        function cerrarModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+        document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) cerrarModal(); });
     </script>
 </body>
 </html>
