@@ -4,7 +4,7 @@ $repo_path = __DIR__;
 $branch = "master";
 $delete_pin = getenv("DELETE_PIN") ?: "4249";
 $github_raw_base = "https://raw.githubusercontent.com/yacker-ls/mis-iconos/master/icons/";
-$per_page = 24;
+$per_page = 50;
 $message = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["delete_file"])) {
