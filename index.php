@@ -3,24 +3,29 @@
 $icons_dir = "icons/";
 $repo_path = __DIR__;
 $branch = 'master';
-$message = ''; // Variable para guardar mensajes
+$delete_pin = '4249';
+$message = '';
 
 // --- PROCESO DE ELIMINACIÓN ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
-    $file_to_delete = basename($_POST['delete_file']);
-    $full_path = $icons_dir . $file_to_delete;
-    if (file_exists($full_path)) {
-        $commands = [
-            "cd $repo_path",
-            "git rm " . escapeshellarg($full_path) . " 2>&1",
-            "git commit -m \"chore(icons): Se eliminó $file_to_delete desde el visor web\" 2>&1",
-            "git push origin $branch 2>&1"
-        ];
-        $output = "";
-        foreach ($commands as $command) { $output .= shell_exec($command); }
-        $message = "<div class='message success'>✅ Icono <strong>$file_to_delete</strong> eliminado y sincronizado.</div>";
+    $pin_ingresado = $_POST['delete_pin'] ?? '';
+    if ($pin_ingresado !== $delete_pin) {
+        $message = "<div class='message error'>❌ Código de seguridad incorrecto. No se eliminó el icono.</div>";
     } else {
-        $message = "<div class='message error'>❌ Error: El archivo <strong>$file_to_delete</strong> no fue encontrado.</div>";
+        $file_to_delete = basename($_POST['delete_file']);
+        $full_path = $icons_dir . $file_to_delete;
+        if (file_exists($full_path)) {
+            $commands = [
+                "cd $repo_path",
+                "git rm " . escapeshellarg($full_path) . " 2>&1",
+                "git commit -m \"chore(icons): Se eliminó $file_to_delete desde el visor web\" 2>&1",
+                "git push origin $branch 2>&1"
+            ];
+            foreach ($commands as $command) { shell_exec($command); }
+            $message = "<div class='message success'>✅ Icono <strong>" . htmlspecialchars($file_to_delete) . "</strong> eliminado y sincronizado.</div>";
+        } else {
+            $message = "<div class='message error'>❌ Error: El archivo no fue encontrado.</div>";
+        }
     }
 }
 
@@ -62,6 +67,18 @@ foreach ($files as $file) {
         .icon-card .filename { font-size: 13px; color: #4a5568; word-wrap: break-word; font-weight: 500; margin-bottom: 15px; }
         .delete-btn { background: #e53e3e; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 12px; }
         .empty-gallery { text-align: center; padding: 50px; background-color: #f7fafc; border-radius: 10px; border: 2px dashed #e2e8f0; grid-column: 1 / -1; }
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #fff; border-radius: 12px; padding: 30px; max-width: 360px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; }
+        .modal h3 { color: #c53030; margin-bottom: 8px; }
+        .modal p { color: #4a5568; font-size: 14px; margin-bottom: 20px; }
+        .modal input[type="password"] { width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 18px; text-align: center; letter-spacing: 6px; box-sizing: border-box; margin-bottom: 16px; }
+        .modal input[type="password"]:focus { outline: none; border-color: #e53e3e; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-buttons button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
+        .btn-cancel { background: #e2e8f0; color: #4a5568; }
+        .btn-confirm { background: #e53e3e; color: white; }
     </style>
 </head>
 <body>
@@ -72,8 +89,8 @@ foreach ($files as $file) {
                 <a href="upload.html">Subir Nuevo Icono</a>
             </div>
         </div>
-        
-        <?php echo $message; // Muestra mensajes de éxito/error aquí ?>
+
+        <?php echo $message; ?>
 
         <div class="icon-gallery">
             <?php if (!empty($image_files)): ?>
@@ -81,10 +98,7 @@ foreach ($files as $file) {
                     <div class="icon-card">
                         <img src="<?= $icons_dir . htmlspecialchars($icon) ?>" alt="<?= htmlspecialchars($icon) ?>">
                         <div class="filename"><?= htmlspecialchars($icon) ?></div>
-                        <form method="POST" action="index.php" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este icono?');">
-                            <input type="hidden" name="delete_file" value="<?= htmlspecialchars($icon) ?>">
-                            <button type="submit" class="delete-btn">🗑️ Eliminar</button>
-                        </form>
+                        <button class="delete-btn" onclick="abrirModal('<?= htmlspecialchars($icon, ENT_QUOTES) ?>')">🗑️ Eliminar</button>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -95,5 +109,37 @@ foreach ($files as $file) {
             <?php endif; ?>
         </div>
     </div>
+
+    <!-- Modal de confirmación con PIN -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3>🔒 Confirmar eliminación</h3>
+            <p>Ingresa el código de seguridad para eliminar <strong id="modalFileName"></strong></p>
+            <form method="POST" action="index.php" id="deleteForm">
+                <input type="hidden" name="delete_file" id="deleteFileInput">
+                <input type="password" name="delete_pin" id="pinInput" placeholder="····" maxlength="10" autofocus>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+                    <button type="submit" class="btn-confirm">Eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function abrirModal(filename) {
+            document.getElementById('modalFileName').textContent = filename;
+            document.getElementById('deleteFileInput').value = filename;
+            document.getElementById('pinInput').value = '';
+            document.getElementById('modalOverlay').classList.add('active');
+            setTimeout(() => document.getElementById('pinInput').focus(), 100);
+        }
+        function cerrarModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) cerrarModal();
+        });
+    </script>
 </body>
 </html>
