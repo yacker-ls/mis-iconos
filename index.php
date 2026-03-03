@@ -3,6 +3,7 @@ $icons_dir = "icons/";
 $repo_path = __DIR__;
 $branch = "master";
 $delete_pin = getenv("DELETE_PIN") ?: "4249";
+$github_raw_base = "https://raw.githubusercontent.com/yacker-ls/mis-iconos/master/icons/";
 $per_page = 24;
 $message = "";
 
@@ -67,7 +68,11 @@ $image_files = array_slice($all_files, $offset, $per_page);
         .icon-card { background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; text-align: center; }
         .icon-card img { max-width: 100%; height: 80px; object-fit: contain; margin-bottom: 15px; }
         .icon-card .filename { font-size: 13px; color: #4a5568; word-wrap: break-word; font-weight: 500; margin-bottom: 15px; }
-        .delete-btn { background: #e53e3e; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 12px; }
+        .card-actions { display: flex; gap: 6px; justify-content: center; }
+        .delete-btn { background: #e53e3e; color: white; border: none; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 12px; flex: 1; }
+        .link-btn { background: #3182ce; color: white; border: none; padding: 7px 10px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 12px; flex: 1; }
+        .link-btn:hover { background: #2b6cb0; }
+        .delete-btn:hover { background: #c53030; }
         .empty-gallery { text-align: center; padding: 50px; background-color: #f7fafc; border-radius: 10px; border: 2px dashed #e2e8f0; grid-column: 1 / -1; }
         .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 30px; flex-wrap: wrap; }
         .pagination a, .pagination span { padding: 8px 14px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; }
@@ -87,6 +92,8 @@ $image_files = array_slice($all_files, $offset, $per_page);
         .modal-buttons button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
         .btn-cancel { background: #e2e8f0; color: #4a5568; }
         .btn-confirm { background: #e53e3e; color: white; }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #2d3748; color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; opacity: 0; transition: all 0.3s ease; z-index: 200; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
@@ -104,7 +111,10 @@ $image_files = array_slice($all_files, $offset, $per_page);
                     <div class="icon-card">
                         <img src="<?= $icons_dir . htmlspecialchars($icon) ?>" alt="<?= htmlspecialchars($icon) ?>">
                         <div class="filename"><?= htmlspecialchars($icon) ?></div>
-                        <button class="delete-btn" onclick="abrirModal('<?= htmlspecialchars($icon, ENT_QUOTES) ?>')">Eliminar</button>
+                        <div class="card-actions">
+                            <button class="link-btn" onclick="copiarLink('<?= htmlspecialchars($icon, ENT_QUOTES) ?>')">Link</button>
+                            <button class="delete-btn" onclick="abrirModal('<?= htmlspecialchars($icon, ENT_QUOTES) ?>')">Eliminar</button>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -145,6 +155,8 @@ $image_files = array_slice($all_files, $offset, $per_page);
         <?php endif; ?>
     </div>
 
+    <div class="toast" id="toast">Link copiado al portapapeles</div>
+
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <h3>Confirmar eliminacion</h3>
@@ -160,6 +172,31 @@ $image_files = array_slice($all_files, $offset, $per_page);
         </div>
     </div>
     <script>
+        const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/yacker-ls/mis-iconos/master/icons/";
+
+        function copiarLink(filename) {
+            const url = GITHUB_RAW_BASE + encodeURIComponent(filename);
+            navigator.clipboard.writeText(url).then(function() {
+                mostrarToast("Link copiado al portapapeles");
+            }).catch(function() {
+                // Fallback para navegadores sin clipboard API
+                const el = document.createElement("textarea");
+                el.value = url;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand("copy");
+                document.body.removeChild(el);
+                mostrarToast("Link copiado al portapapeles");
+            });
+        }
+
+        function mostrarToast(msg) {
+            const t = document.getElementById("toast");
+            t.textContent = msg;
+            t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 2500);
+        }
+
         function abrirModal(filename) {
             document.getElementById("modalFileName").textContent = filename;
             document.getElementById("deleteFileInput").value = filename;
