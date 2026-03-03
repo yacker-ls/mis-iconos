@@ -6,7 +6,7 @@ $target_dir = "icons/";
 $file_key = 'iconFile'; 
 $repo_path = __DIR__;
 $branch = 'master'; 
-$max_file_size = 20 * 1024 * 1024; // 20MB
+$max_file_size = 3 * 1024 * 1024; // 3MB
 $TOKEN_SECRETO = "jose13"; // He actualizado a jose13
 
 // Buffer de salida para mensajes de error
@@ -30,7 +30,7 @@ if (empty($error_messages)) {
             $error_messages[] = "❌ Error: Solo se permiten archivos JPG, JPEG y PNG.";
         }
         if ($file["size"] > $max_file_size) {
-            $error_messages[] = "❌ Error: El archivo es demasiado grande.";
+            $error_messages[] = "❌ Error: El archivo supera el límite máximo de 3MB. Por favor comprime o redimensiona la imagen.";
         }
     }
 }
