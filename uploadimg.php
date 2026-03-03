@@ -6,7 +6,7 @@ $target_dir = "icons/";
 $file_key = 'iconFile'; 
 $repo_path = __DIR__;
 $branch = 'master'; 
-$max_file_size = 3 * 1024 * 1024; // 3MB
+$max_file_size = 4 * 1024 * 1024; // 4MB
 $TOKEN_SECRETO = "jose13"; // He actualizado a jose13
 
 // Buffer de salida para mensajes de error
