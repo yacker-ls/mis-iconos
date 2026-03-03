@@ -1,16 +1,17 @@
 <?php
 $icons_dir = "icons/";
 $repo_path = __DIR__;
-$branch = 'master';
-$delete_pin = getenv("DELETE_PIN") ?: '4249';
-$message = '';
+$branch = "master";
+$delete_pin = getenv("DELETE_PIN") ?: "4249";
+$per_page = 24;
+$message = "";
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
-    $pin_ingresado = $_POST['delete_pin'] ?? '';
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["delete_file"])) {
+    $pin_ingresado = $_POST["delete_pin"] ?? "";
     if ($pin_ingresado !== $delete_pin) {
-        $message = "<div class='message error'>Codigo de seguridad incorrecto. No se elimino el icono.</div>";
+        $message = "<div class=\"message error\">Codigo de seguridad incorrecto. No se elimino el icono.</div>";
     } else {
-        $file_to_delete = basename($_POST['delete_file']);
+        $file_to_delete = basename($_POST["delete_file"]);
         $full_path = $icons_dir . $file_to_delete;
         if (file_exists($full_path)) {
             $commands = [
@@ -20,25 +21,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
                 "git push origin $branch 2>&1"
             ];
             foreach ($commands as $command) { shell_exec($command); }
-            $message = "<div class='message success'>Icono <strong>" . htmlspecialchars($file_to_delete) . "</strong> eliminado y sincronizado.</div>";
+            $message = "<div class=\"message success\">Icono <strong>" . htmlspecialchars($file_to_delete) . "</strong> eliminado y sincronizado.</div>";
         } else {
-            $message = "<div class='message error'>Error: El archivo no fue encontrado.</div>";
+            $message = "<div class=\"message error\">Error: El archivo no fue encontrado.</div>";
         }
     }
 }
 
-if (isset($_GET['upload']) && $_GET['upload'] === 'success') {
-    $message = "<div class='message success'>Icono subido y sincronizado con GitHub exitosamente!</div>";
+if (isset($_GET["upload"]) && $_GET["upload"] === "success") {
+    $message = "<div class=\"message success\">Icono subido y sincronizado con GitHub exitosamente!</div>";
 }
 
-$image_files = [];
-$allowed_types = ['png', 'jpg', 'jpeg', 'svg', 'gif'];
-$files = scandir($icons_dir);
-foreach ($files as $file) {
+$all_files = [];
+$allowed_types = ["png", "jpg", "jpeg", "svg", "gif"];
+foreach (scandir($icons_dir) as $file) {
     if (in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), $allowed_types)) {
-        $image_files[] = $file;
+        $all_files[] = $file;
     }
 }
+
+$total = count($all_files);
+$total_pages = max(1, (int)ceil($total / $per_page));
+$page = max(1, min($total_pages, (int)($_GET["page"] ?? 1)));
+$offset = ($page - 1) * $per_page;
+$image_files = array_slice($all_files, $offset, $per_page);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -47,7 +53,7 @@ foreach ($files as $file) {
     <title>Gestor de Iconos</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; }
+        body { font-family: "Inter", sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: 20px auto; padding: 20px; background-color: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .header { text-align: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
         h1 { color: #2d3748; font-weight: 700; }
@@ -63,6 +69,13 @@ foreach ($files as $file) {
         .icon-card .filename { font-size: 13px; color: #4a5568; word-wrap: break-word; font-weight: 500; margin-bottom: 15px; }
         .delete-btn { background: #e53e3e; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 12px; }
         .empty-gallery { text-align: center; padding: 50px; background-color: #f7fafc; border-radius: 10px; border: 2px dashed #e2e8f0; grid-column: 1 / -1; }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 30px; flex-wrap: wrap; }
+        .pagination a, .pagination span { padding: 8px 14px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; }
+        .pagination a { background: #e2e8f0; color: #4a5568; transition: all 0.2s; }
+        .pagination a:hover { background: #667eea; color: white; }
+        .pagination span.current { background: #667eea; color: white; }
+        .pagination span.disabled { background: #f7fafc; color: #cbd5e0; }
+        .pagination-info { text-align: center; color: #718096; font-size: 14px; margin-top: 10px; }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
         .modal { background: #fff; border-radius: 12px; padding: 30px; max-width: 360px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; }
@@ -101,7 +114,37 @@ foreach ($files as $file) {
                 </div>
             <?php endif; ?>
         </div>
+
+        <?php if ($total_pages > 1): ?>
+        <div class="pagination">
+            <?php if ($page > 1): ?>
+                <a href="?page=1">&laquo;</a>
+                <a href="?page=<?= $page - 1 ?>">&lsaquo; Anterior</a>
+            <?php else: ?>
+                <span class="disabled">&laquo;</span>
+                <span class="disabled">&lsaquo; Anterior</span>
+            <?php endif; ?>
+            <?php for ($i = max(1,$page-2); $i <= min($total_pages,$page+2); $i++): ?>
+                <?php if ($i === $page): ?>
+                    <span class="current"><?= $i ?></span>
+                <?php else: ?>
+                    <a href="?page=<?= $i ?>"><?= $i ?></a>
+                <?php endif; ?>
+            <?php endfor; ?>
+            <?php if ($page < $total_pages): ?>
+                <a href="?page=<?= $page + 1 ?>">Siguiente &rsaquo;</a>
+                <a href="?page=<?= $total_pages ?>">&raquo;</a>
+            <?php else: ?>
+                <span class="disabled">Siguiente &rsaquo;</span>
+                <span class="disabled">&raquo;</span>
+            <?php endif; ?>
+        </div>
+        <p class="pagination-info">
+            Mostrando <?= $offset + 1 ?>-<?= min($offset + $per_page, $total) ?> de <?= $total ?> iconos &mdash; Pagina <?= $page ?> de <?= $total_pages ?>
+        </p>
+        <?php endif; ?>
     </div>
+
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <h3>Confirmar eliminacion</h3>
@@ -118,14 +161,14 @@ foreach ($files as $file) {
     </div>
     <script>
         function abrirModal(filename) {
-            document.getElementById('modalFileName').textContent = filename;
-            document.getElementById('deleteFileInput').value = filename;
-            document.getElementById('pinInput').value = '';
-            document.getElementById('modalOverlay').classList.add('active');
-            setTimeout(() => document.getElementById('pinInput').focus(), 100);
+            document.getElementById("modalFileName").textContent = filename;
+            document.getElementById("deleteFileInput").value = filename;
+            document.getElementById("pinInput").value = "";
+            document.getElementById("modalOverlay").classList.add("active");
+            setTimeout(() => document.getElementById("pinInput").focus(), 100);
         }
-        function cerrarModal() { document.getElementById('modalOverlay').classList.remove('active'); }
-        document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) cerrarModal(); });
+        function cerrarModal() { document.getElementById("modalOverlay").classList.remove("active"); }
+        document.getElementById("modalOverlay").addEventListener("click", function(e) { if (e.target === this) cerrarModal(); });
     </script>
 </body>
 </html>
