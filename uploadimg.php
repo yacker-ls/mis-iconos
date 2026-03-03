@@ -55,8 +55,8 @@ if (empty($error_messages)) {
     $push_success = true;
     foreach ($commands as $command) {
         $current_output = shell_exec($command);
-        $git_output .= "<strong>$ " . htmlspecialchars($command) . "</strong>\n" . htmlspecialchars($current_output) . "\n\n";
-        if (strpos(strtolower($current_output), 'error') !== false || strpos(strtolower($current_output), 'fatal') !== false) {
+        $git_output .= "<strong>$ " . htmlspecialchars($command) . "</strong>\n" . htmlspecialchars($current_output ?? "") . "\n\n";
+        if (strpos(strtolower($current_output ?? ""), 'error') !== false || strpos(strtolower($current_output ?? ""), 'fatal') !== false) {
             $push_success = false;
         }
     }
